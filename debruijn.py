@@ -50,7 +50,6 @@ class DeBruijnGraph(nx.DiGraph):
         for read in reads:
             self.add_read(read)
 
-#    def build_nodes(self):
 
 
 
