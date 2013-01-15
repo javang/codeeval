@@ -9,6 +9,8 @@ import debruijn
 import networkx as nx
 log = logging.getLogger("test_database")
 
+
+@unittest.skip("blah")
 class TestAssembleReads(unittest.TestCase):
 
     def setUp(self):
@@ -39,7 +41,7 @@ class TestAssembleReads(unittest.TestCase):
 class TestOverlap(unittest.TestCase):
 
     def test_overlap(self):
-        """ Test the overlap function with an easy calse
+        """ Test the overlap function with an easy case
         """
         seq1 = "abdc sdf "
         seq2 = "sdf sabd"
@@ -47,9 +49,17 @@ class TestOverlap(unittest.TestCase):
         self.assertEqual(n_overlaps, 4)
         ov = seq2[0:n_overlaps]
         self.assertEqual(ov, "sdf ")
+        n_overlaps = overlap.max_overlap(seq2, seq1)
+        self.assertEqual(n_overlaps, 3)
+        ov = seq1[0:n_overlaps]
+        self.assertEqual(ov, "abd")
 
 if __name__ == "__main__":
     logging.basicConfig(stream=sys.stdout)
     logging.root.setLevel(logging.DEBUG)
     unittest.main()
 
+
+
+abcdefghigdsfd
+sfd
