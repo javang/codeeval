@@ -36,6 +36,10 @@ def characters_overlapping(left, right):
 
 
 def compute_back_track_table(seq):
+    """ builds the backtrack table of the Knuth Morris Pratt algorithm
+        @param seq A strings
+        @return the backtrack table
+    """
     table = [0 for i in range(0,len(seq))]
     table[0] = -1
     table[1] = 0
@@ -68,7 +72,22 @@ def build_contigs(seqs, overlaps):
             lefts.remove(i)
         if j in lefts:
             lefts.remove(j)
+    contigs = dict()
+    for i in lefts:
+        contigs[i] = seqs[i]
 
+    while len(overlaps) > 0:
+        ov = overlaps.pop(0)
+        n_chars = ov[0] # number of overlapping characters
+        l = ov[1] # index of the left sequence in the overlap
+        r = ov[2] # index of the right sequence in the overlap
+        if l in contigs:
+            contigs[r] = contigs[l] + seqs[r][n_chars:]
+            del contigs[l]
+        else:
+            # nothing to do with the overlap yet. Put it back
+            overlaps.append(ov)
+    return contigs.values()
 
 
 
@@ -97,7 +116,7 @@ def assemble(seqs):
             log.debug("fragments assembled %s",fragments_assembled)
     log.info("Assembly %s", overlaps)
     contigs = build_contigs(sorted_seqs,overlaps)
-
+    return contigs
 
 
 

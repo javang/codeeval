@@ -18,14 +18,13 @@ class TestAssembleReads(unittest.TestCase):
     def test_easy_case(self):
         """ Test the assembly of the easy case """
         f = open(self.fn_easy_case, "r")
+        solution = "O draconian devil! Oh lame saint!"
         for line in f:
             reads = line.rstrip().split(";")
-            assembly = overlap.assemble(reads)
-            print assembly
+            contigs = overlap.assemble(reads)
+            self.assertEqual(contigs[0],solution)
         f.close()
 
-#        solution = "O draconian devil! Oh lame saint!"
-#        self.assertEqual(text, solution, msg="The assembly is incorrect")
 
     @unittest.skip("blah")
     def test_build_graph(self):
