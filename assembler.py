@@ -7,7 +7,6 @@ import overlap
 log = logging.getLogger("mlearning")
 
 
-
 if __name__ == "__main__":
 
     import argparse
@@ -25,7 +24,7 @@ if __name__ == "__main__":
         logging.basicConfig(filename=args.log, filemode="w")
     else:
         logging.basicConfig(stream=sys.stdout)
-    logging.root.setLevel(logging.DEBUG)
+    logging.root.setLevel(logging.ERROR)
 
     f = open(args.fn, "r")
     for line in f:
