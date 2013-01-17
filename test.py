@@ -63,5 +63,5 @@ class TestOverlap(unittest.TestCase):
 
 if __name__ == "__main__":
     logging.basicConfig(stream=sys.stdout)
-    logging.root.setLevel(logging.DEBUG)
+    logging.root.setLevel(logging.INFO)
     unittest.main()

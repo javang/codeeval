@@ -37,7 +37,7 @@ def characters_overlapping(left, right):
 
 def compute_back_track_table(seq):
     """ builds the backtrack table of the Knuth Morris Pratt algorithm
-        @param seq A strings
+        @param seq A string
         @return the backtrack table
     """
     table = [0 for i in range(0,len(seq))]
@@ -59,22 +59,24 @@ def compute_back_track_table(seq):
     return table
 
 
-def build_contigs(seqs, overlaps):
+def build_contigs(fragments, overlaps):
 
     # find the indices that are only in the left part of the overlaps.
     # These are the indices where the contigs start
     lefts = set()
     rights = set()
-    for (n_chars, i, j) in overlaps:
-        rights.add(j)
-        lefts.add(i)
-        if i in rights:
-            lefts.remove(i)
-        if j in lefts:
-            lefts.remove(j)
+    for (n_chars, l, r) in overlaps:
+        rights.add(r)
+        lefts.add(l)
+        if l in rights:
+            lefts.remove(l)
+        if r in lefts:
+            lefts.remove(r)
+    log.debug("The contigs start at sequences %s", lefts)
+    # set contigs
     contigs = dict()
-    for i in lefts:
-        contigs[i] = seqs[i]
+    for l in lefts:
+        contigs[l] = fragments[l]
 
     while len(overlaps) > 0:
         ov = overlaps.pop(0)
@@ -82,87 +84,97 @@ def build_contigs(seqs, overlaps):
         l = ov[1] # index of the left sequence in the overlap
         r = ov[2] # index of the right sequence in the overlap
         if l in contigs:
-            contigs[r] = contigs[l] + seqs[r][n_chars:]
+            log.debug("Merging:")
+            log.debug("    %s",contigs[l])
+            log.debug("    %s",fragments[r])
+            contigs[r] = contigs[l] + fragments[r][n_chars:]
+            log.debug("obtained:")
+            log.debug("    %s", contigs[r])
             del contigs[l]
         else:
             # nothing to do with the overlap yet. Put it back
             overlaps.append(ov)
+        overlaps.sort()
+        log.debug("Remaining overlaps %s. %s", len(overlaps), overlaps)
+
     return contigs.values()
 
 
 
-def assemble(seqs):
-    log.info("Assemblying %s sequences", len(seqs))
+def assemble(fragments):
+    log.info("Assemblying %s sequences", len(fragments))
     # sort sequences by length. If there are overlaps between
     # large sequences it will avoid calculating overlaps between
     # smaller ones
-    lenghts = [(len(s),i) for i,s in enumerate(seqs)]
+    lenghts = [(len(s),i) for i,s in enumerate(fragments)]
     lenghts.sort()
     lengths = lenghts.reverse()
-    sorted_seqs = [seqs[i] for l,i in lenghts]
-    log.debug("Sorted sequences: %s", sorted_seqs)
+    sorted_fragments = [fragments[i] for l,i in lenghts]
+    log.debug("Sorted sequences: %s", sorted_fragments)
     fragments_assembled = 0
     overlaps = []
-    n_seqs = len(sorted_seqs)
-    mat = OverlapMatrix(n_seqs)
-    while fragments_assembled < n_seqs - 1:
-        compute_overlaps(sorted_seqs, mat)
+    n_fragments = len(sorted_fragments)
+    mat = OverlapMatrix(n_fragments)
+    while fragments_assembled < n_fragments - 1:
+        compute_overlaps(sorted_fragments, mat)
         (n_chars, left_index, right_index) = mat.get_max_overlapping_pair()
         if n_chars == 0:
             break
         else:
             overlaps.append((n_chars, left_index, right_index))
             fragments_assembled += 1
-            log.debug("fragments assembled %s",fragments_assembled)
-    log.info("Assembly %s", overlaps)
-    contigs = build_contigs(sorted_seqs,overlaps)
+            log.debug("Last overlap had %s characters. " \
+            "fragments_assembled so far %s",n_chars,fragments_assembled)
+    log.debug("Assembly %s", overlaps)
+    contigs = build_contigs(sorted_fragments,overlaps)
     return contigs
 
 
 
-def compute_overlaps(seqs, mat):
-    log.info("Computing overlaps")
-    n_seqs = len(seqs)
-    for i, j in itertools.product(xrange(n_seqs), xrange(n_seqs)):
+def compute_overlaps(fragments, mat):
+    log.debug("Computing overlaps")
+    n_fragments = len(fragments)
+    for i, j in itertools.product(xrange(n_fragments), xrange(n_fragments)):
         if i == j:
             continue
-        if not mat.needs_calculation(i, j, len(seqs[i]), len(seqs[j])):
+        if not mat.needs_calculation(i, j, len(fragments[i]), len(fragments[j])):
             continue
-        n_chars = characters_overlapping(seqs[i], seqs[j])
-        log.debug("Overlap between sequences %s (left) and %s (right): %s",i, j, n_chars)
+        n_chars = characters_overlapping(fragments[i], fragments[j])
+        #log.debug("Overlap between sequences %s (left) and %s (right): %s",i, j, n_chars)
         mat.store(i, j, n_chars)
 
 
-class OverlapMatrix:
 
+
+class OverlapMatrix:
     def __init__(self, n_sequences):
         self.overlaps_heap = []
         self.start_dictionaries(n_sequences)
 
-    def start_dictionaries(self, n_seqs):
+    def start_dictionaries(self, n_fragments):
         """ Build the dictionary used to check if the overlap
         between 2 sequences has been calculated already
 
-            @param n_seqs Number of sequences considered
+            @param n_fragments Number of sequences considered
         """
         self.used_as_left = dict()
         self.used_as_right = dict()
         self.calculated = dict()
-        for i in xrange(n_seqs):
-            self.used_as_left[i] = False
-            self.used_as_right[i] = False
-            self.calculated[i] = dict()
-            for j in xrange(n_seqs):
-                self.calculated[i][j] = False
+        for l in xrange(n_fragments):
+            self.used_as_left[l] = False
+            self.used_as_right[l] = False
+            self.calculated[l] = dict()
+            for r in xrange(n_fragments):
+                self.calculated[l][r] = False
 
-    def store(self, i, j, n_chars):
-        """ Store the number of oerlapping characters between sequences i and j
-            @param i index of the sequence acting as "left"
-            @param j index of the sequence acting as "right"
+    def store(self, left_index, right_index, n_chars):
+        """ Store the number of oerlapping characters  between two fragments
+            @param left_index index of the sequence acting as "left"
+            @param right_index index of the sequence acting as "right"
             @param n_chars Number of overlapping characters
         """
-        heapq.heappush(self.overlaps_heap, (-1 * n_chars, i, j))
-        self.calculated[i][j] = True
+        heapq.heappush(self.overlaps_heap, (-1 * n_chars, left_index, right_index))
+        self.calculated[left_index][right_index] = True
 
     def get_max_overlapping_pair(self):
         """ Return the next pair with the maximum overlap
@@ -171,12 +183,12 @@ class OverlapMatrix:
             previous overlaps)
         """
         try:
-            (n_chars, i, j) = heapq.heappop(self.overlaps_heap)
-            while self.used_as_left[i] == True and \
-                  self.used_as_right[j] == True:
-                (n_chars, i, j) = heapq.heappop(self.overlaps_heap)
-            self.mark_as_used(i,j)
-            return (-1 *n_chars, i, j)
+            (n_chars, l, r) = heapq.heappop(self.overlaps_heap)
+            while self.used_as_left[l] == True and \
+                  self.used_as_right[r] == True:
+                (n_chars, l, r) = heapq.heappop(self.overlaps_heap)
+            self.mark_as_used(l,r)
+            return (-1 *n_chars, l, r)
         except IndexError:
             # if the heap fails is because there are no more overlaps
             return (0,-1, -1)
@@ -204,8 +216,8 @@ class OverlapMatrix:
             @return True if is worth calculating the overlap between the
             sequences i and j. False otherwise
         """
-        log.debug("Check if calculating overlap (%s, %s) is required",
-                                                 index_left, index_right)
+#        log.debug("Check if calculating overlap (%s, %s) is required",
+#                                                 index_left, index_right)
         if len(self.overlaps_heap) == 0:
             return True # nothing calculated yet
         max_overlap = -1 * self.overlaps_heap[0][0]
