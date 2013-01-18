@@ -4,16 +4,15 @@ log = logging.getLogger("overlap")
 
 def characters_overlapping(left, right):
     """
-        Compute the overlap between two strings.
+        Compute the overlap between two sequences.
         Uses a modified version of the Knuth Morris Pratt algorithm
-        @param left Sequence to the left
+        @param left  Sequence to the left
         @param right Sequence to the right
         left -------------
                       ||||
                       --------------- right
         @return The number of letters that overlap
-        (located at the end of left and at the beginning
-        of right)
+        (located at the end of "left" and at the beginning of "right")
     """
     if len(left) > len(right):
         k = len(left) - len(right)
@@ -85,4 +84,5 @@ def compute_back_track_table(seq):
             position += 1
 
     return table
+
 
