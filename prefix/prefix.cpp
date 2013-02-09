@@ -131,10 +131,12 @@ public:
     void clear() {
         if(left_ != NULL) {
             left_->clear(); 
+            delete_left();
             left_ = NULL;
         }
         if(right_ != NULL) {
             right_->clear(); 
+            delete_right();
             right_ = NULL;
         }
     }
